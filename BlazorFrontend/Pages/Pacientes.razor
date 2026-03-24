@@ -1,0 +1,495 @@
+@page "/pacientes"
+@inject AuthService AuthService
+@inject PacienteApiService PacienteService
+@inject NavigationManager Nav
+
+<PageTitle>Pacientes — UT San Vicente CES</PageTitle>
+
+@if (!AuthService.EstaAutenticado)
+{
+    Nav.NavigateTo("/login");
+    return;
+}
+
+<!-- Encabezado -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold text-sv mb-0">
+            <i class="bi bi-people-fill me-2"></i>Gestión de Pacientes
+        </h3>
+        <small class="text-muted">@pacientes.Count paciente(s) encontrado(s)</small>
+    </div>
+    @if (AuthService.Rol == "Admin")
+    {
+        <button class="btn btn-sv-primary" @onclick="AbrirModalCrear">
+            <i class="bi bi-person-plus-fill me-2"></i>Nuevo Paciente
+        </button>
+    }
+</div>
+
+<!-- Buscador -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-center">
+
+            <!-- Campo de búsqueda -->
+            <div class="col-12 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="Buscar por nombre o documento..."
+                           value="@textoBusqueda"
+                           @oninput="OnBuscar" />
+                    @if (!string.IsNullOrEmpty(textoBusqueda))
+                    {
+                        <button class="btn btn-outline-secondary" @onclick="LimpiarBusqueda">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Control de registros con flechas -->
+            <div class="col-auto">
+                <div class="d-flex align-items-center gap-1">
+                    <small class="text-muted me-1">Mostrar:</small>
+                    <button class="btn btn-outline-sv btn-sm px-2"
+                            @onclick="DisminuirTake"
+                            disabled="@(take <= 5)">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <span class="badge bg-success fs-6 px-3">@take</span>
+                    <button class="btn btn-outline-sv btn-sm px-2"
+                            @onclick="AumentarTake">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Botón refrescar -->
+            <div class="col-auto">
+                <button class="btn btn-outline-sv" @onclick="CargarPacientes" disabled="@cargando">
+                    <i class="bi bi-arrow-clockwise @(cargando ? "spin" : "")"></i>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Alerta de resultado -->
+@if (!string.IsNullOrEmpty(mensajeAccion))
+{
+    <div class="alert @(accionExitosa ? "alert-success" : "alert-danger") alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+        <i class="bi @(accionExitosa ? "bi-check-circle-fill" : "bi-x-circle-fill")"></i>
+        <span>@mensajeAccion</span>
+        <button type="button" class="btn-close ms-auto" @onclick="() => mensajeAccion = null"></button>
+    </div>
+}
+
+<!-- Tabla -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (cargando)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-success" role="status"></div>
+                <p class="text-muted mt-2">Cargando pacientes...</p>
+            </div>
+        }
+        else if (pacientes.Count == 0)
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-4 text-muted"></i>
+                <p class="text-muted mt-2">No se encontraron pacientes.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-sv mb-0">
+                    <thead>
+                        <tr>
+                            <th><i class="bi bi-card-text me-1"></i>Documento</th>
+                            <th><i class="bi bi-person me-1"></i>Nombre</th>
+                            <th><i class="bi bi-calendar me-1"></i>Edad</th>
+                            <th><i class="bi bi-envelope me-1"></i>Email</th>
+                            @if (AuthService.Rol == "Admin")
+                            {
+                                <th class="text-center">Acciones</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in pacientes)
+                        {
+                            <tr>
+                                <td class="fw-semibold text-sv">@p.Documento</td>
+                                <td>@p.Nombre</td>
+                                <td><span class="badge bg-success-subtle text-success">@p.Edad años</span></td>
+                                <td class="text-muted">@p.Email</td>
+                                @if (AuthService.Rol == "Admin")
+                                {
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-sv" @onclick="() => AbrirModalEditar(p)">
+                                            <i class="bi bi-pencil-fill me-1"></i>Editar
+                                        </button>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ═══════════════ Modal Crear Paciente ═══════════════ -->
+@if (mostrarModalCrear)
+{
+    <div class="modal-backdrop-sv" @onclick="CerrarModales"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header modal-header-sv">
+                    <h5 class="modal-title text-white">
+                        <i class="bi bi-person-plus-fill me-2"></i>Nuevo Paciente
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CerrarModales"></button>
+                </div>
+
+                <EditForm Model="nuevoDto" OnValidSubmit="GuardarNuevo">
+                    <DataAnnotationsValidator />
+
+                    <div class="modal-body p-4">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-card-text me-1 text-sv"></i>Número de Documento
+                            </label>
+                            <InputText class="form-control"
+                                       @bind-Value="nuevoDto.Documento"
+                                       placeholder="Ej: 1234567890" />
+                            <ValidationMessage For="@(() => nuevoDto.Documento)"
+                                               class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-person me-1 text-sv"></i>Nombre Completo
+                            </label>
+                            <InputText class="form-control"
+                                       @bind-Value="nuevoDto.Nombre"
+                                       placeholder="Ej: Juan David Pérez" />
+                            <ValidationMessage For="@(() => nuevoDto.Nombre)"
+                                               class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-envelope me-1 text-sv"></i>Correo Electrónico
+                            </label>
+                            <InputText class="form-control"
+                                       @bind-Value="nuevoDto.Email"
+                                       placeholder="correo@ejemplo.com" />
+                            <ValidationMessage For="@(() => nuevoDto.Email)"
+                                               class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-calendar me-1 text-sv"></i>Fecha de Nacimiento
+                            </label>
+                            <InputDate class="form-control"
+                                       @bind-Value="nuevoDto.FechaNacimiento" />
+                            <ValidationMessage For="@(() => nuevoDto.FechaNacimiento)"
+                                               class="text-danger small" />
+                            @if (nuevoDto.FechaNacimiento >= DateTime.Today)
+                            {
+                                <div class="text-danger small">La fecha debe ser anterior a hoy.</div>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(errorModal))
+                        {
+                            <div class="alert alert-danger py-2 d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-triangle-fill"></i>@errorModal
+                            </div>
+                        }
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CerrarModales">
+                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-sv-primary" disabled="@guardando">
+                            @if (guardando)
+                            { <span class="spinner-border spinner-border-sm me-2"></span> }
+                            <i class="bi bi-check-lg me-1"></i>Guardar
+                        </button>
+                    </div>
+                </EditForm>
+
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ═══════════════ Modal Editar Paciente ═══════════════ -->
+@if (mostrarModalEditar && pacienteEditar != null)
+{
+    <div class="modal-backdrop-sv" @onclick="CerrarModales"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header modal-header-sv">
+                    <h5 class="modal-title text-white">
+                        <i class="bi bi-pencil-fill me-2"></i>Editar Paciente
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CerrarModales"></button>
+                </div>
+
+                <EditForm Model="editarDto" OnValidSubmit="GuardarEdicion">
+                    <DataAnnotationsValidator />
+
+                    <div class="modal-body p-4">
+
+                        <div class="alert alert-light border-start border-success border-3 py-2 mb-3">
+                            <small class="text-muted">Documento:</small>
+                            <strong class="ms-2 text-sv">@pacienteEditar.Documento</strong>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-person me-1 text-sv"></i>Nombre Completo
+                            </label>
+                            <InputText class="form-control"
+                                       @bind-Value="editarDto.Nombre" />
+                            <ValidationMessage For="@(() => editarDto.Nombre)"
+                                               class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-envelope me-1 text-sv"></i>Correo Electrónico
+                            </label>
+                            <InputText class="form-control"
+                                       @bind-Value="editarDto.Email" />
+                            <ValidationMessage For="@(() => editarDto.Email)"
+                                               class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-calendar me-1 text-sv"></i>Fecha de Nacimiento
+                            </label>
+                            <InputDate class="form-control"
+                                       @bind-Value="editarDto.FechaNacimiento" />
+                            <ValidationMessage For="@(() => editarDto.FechaNacimiento)"
+                                               class="text-danger small" />
+                            @if (editarDto.FechaNacimiento >= DateTime.Today)
+                            {
+                                <div class="text-danger small">La fecha debe ser anterior a hoy.</div>
+                            }
+                        </div>
+
+                        <div class="form-check form-switch mb-2">
+                            <InputCheckbox class="form-check-input"
+                                           id="estaActivo"
+                                           @bind-Value="editarDto.EstaActivo" />
+                            <label class="form-check-label fw-semibold" for="estaActivo">
+                                Paciente Activo
+                            </label>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(errorModal))
+                        {
+                            <div class="alert alert-danger py-2 d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-triangle-fill"></i>@errorModal
+                            </div>
+                        }
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CerrarModales">
+                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-sv-primary" disabled="@guardando">
+                            @if (guardando)
+                            { <span class="spinner-border spinner-border-sm me-2"></span> }
+                            <i class="bi bi-check-lg me-1"></i>Actualizar
+                        </button>
+                    </div>
+                </EditForm>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<PacienteDto> pacientes = new();
+    private string textoBusqueda = string.Empty;
+    private int take = 10;
+    private bool cargando = false;
+    private string? mensajeAccion;
+    private bool accionExitosa;
+
+    // Modal crear — usa el DTO directamente para que DataAnnotations funcione
+    private bool mostrarModalCrear = false;
+    private CrearPacienteDto nuevoDto = new();
+
+    // Modal editar
+    private bool mostrarModalEditar = false;
+    private PacienteDto? pacienteEditar;
+    private int pacienteEditarId = 0;
+    private ActualizarPacienteDto editarDto = new();
+
+    private string? errorModal;
+    private bool guardando = false;
+    private Timer? debounceTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.EstaAutenticado)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        await CargarPacientes();
+    }
+
+    private async Task CargarPacientes()
+    {
+        cargando = true;
+        pacientes = await PacienteService.ObtenerTodosAsync(textoBusqueda, take);
+        cargando = false;
+    }
+
+    private async Task AumentarTake()
+    {
+        take += 5;
+        await CargarPacientes();
+    }
+
+    private async Task DisminuirTake()
+    {
+        if (take > 5) take -= 5;
+        await CargarPacientes();
+    }
+
+    private void OnBuscar(ChangeEventArgs e)
+    {
+        textoBusqueda = e.Value?.ToString() ?? string.Empty;
+        debounceTimer?.Dispose();
+        debounceTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(CargarPacientes);
+        }, null, 400, Timeout.Infinite);
+    }
+
+    private async Task LimpiarBusqueda()
+    {
+        textoBusqueda = string.Empty;
+        await CargarPacientes();
+    }
+
+    // ── Modal Crear ──────────────────────────────────
+    private void AbrirModalCrear()
+    {
+        nuevoDto = new CrearPacienteDto { FechaNacimiento = DateTime.Today.AddYears(-20) };
+        errorModal = null;
+        mostrarModalCrear = true;
+    }
+
+    private async Task GuardarNuevo()
+    {
+        // Validación adicional: fecha debe ser en el pasado
+        if (nuevoDto.FechaNacimiento >= DateTime.Today)
+        {
+            errorModal = "La fecha de nacimiento debe ser anterior a hoy.";
+            return;
+        }
+
+        guardando = true;
+        errorModal = null;
+
+        var (exito, mensaje) = await PacienteService.CrearAsync(nuevoDto);
+
+        if (exito)
+        {
+            CerrarModales();
+            MostrarMensaje(mensaje, true);
+            await CargarPacientes();
+        }
+        else
+        {
+            errorModal = mensaje;
+        }
+
+        guardando = false;
+    }
+
+    // ── Modal Editar ─────────────────────────────────
+    private void AbrirModalEditar(PacienteDto p)
+    {
+        pacienteEditar = p;
+        pacienteEditarId = pacientes.IndexOf(p) + 1;
+        editarDto = new ActualizarPacienteDto
+        {
+            Nombre = p.Nombre,
+            Email = p.Email,
+            FechaNacimiento = p.FechaNacimiento,
+            EstaActivo = true
+        };
+        errorModal = null;
+        mostrarModalEditar = true;
+    }
+
+    private async Task GuardarEdicion()
+    {
+        if (pacienteEditar == null) return;
+
+        if (editarDto.FechaNacimiento >= DateTime.Today)
+        {
+            errorModal = "La fecha de nacimiento debe ser anterior a hoy.";
+            return;
+        }
+
+        guardando = true;
+        errorModal = null;
+
+        var (exito, mensaje) = await PacienteService.ActualizarAsync(pacienteEditarId, editarDto);
+
+        if (exito)
+        {
+            CerrarModales();
+            MostrarMensaje(mensaje, true);
+            await CargarPacientes();
+        }
+        else
+        {
+            errorModal = mensaje;
+        }
+
+        guardando = false;
+    }
+
+    private void CerrarModales()
+    {
+        mostrarModalCrear = false;
+        mostrarModalEditar = false;
+        pacienteEditar = null;
+        errorModal = null;
+    }
+
+    private void MostrarMensaje(string mensaje, bool exito)
+    {
+        mensajeAccion = mensaje;
+        accionExitosa = exito;
+    }
+}

@@ -1,0 +1,101 @@
+@page "/"
+@page "/login"
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Iniciar Sesión — UT San Vicente CES</PageTitle>
+
+<div class="login-bg d-flex align-items-center justify-content-center min-vh-100">
+    <div class="login-card card shadow-lg border-0">
+        <!-- Header verde -->
+        <div class="card-header login-header text-center py-4">
+            <i class="bi bi-hospital display-5 text-white"></i>
+            <h4 class="text-white fw-bold mt-2 mb-0">UT San Vicente CES</h4>
+            <small class="text-white-50">Sistema de Gestión de Pacientes</small>
+        </div>
+
+        <div class="card-body p-4">
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="alert alert-danger d-flex align-items-center gap-2 py-2" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>@error</span>
+                </div>
+            }
+
+            <EditForm Model="loginDto" OnValidSubmit="HandleLogin">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-muted">
+                        <i class="bi bi-person me-1"></i>Usuario
+                    </label>
+                    <InputText class="form-control form-control-sv"
+                               @bind-Value="loginDto.Username"
+                               placeholder="admin o viewer" />
+                    <ValidationMessage For="@(() => loginDto.Username)"
+                                       class="text-danger small mt-1" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold text-muted">
+                        <i class="bi bi-lock me-1"></i>Contraseña
+                    </label>
+                    <InputText type="password"
+                               class="form-control form-control-sv"
+                               @bind-Value="loginDto.Password"
+                               placeholder="••••••••" />
+                    <ValidationMessage For="@(() => loginDto.Password)"
+                                       class="text-danger small mt-1" />
+                </div>
+
+                <button type="submit" class="btn btn-sv-primary w-100 py-2 fw-bold" disabled="@cargando">
+                    @if (cargando)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Autenticando...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        <span>Iniciar Sesión</span>
+                    }
+                </button>
+            </EditForm>
+        </div>
+
+        <div class="card-footer bg-light text-center py-2">
+            <small class="text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                Prueba: <strong>admin / admin123</strong> · <strong>viewer / viewer123</strong>
+            </small>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginRequestDto loginDto = new();
+    private string? error;
+    private bool cargando = false;
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.EstaAutenticado)
+            Nav.NavigateTo("/pacientes");
+    }
+
+    private async Task HandleLogin()
+    {
+        cargando = true;
+        error = null;
+
+        var (exito, mensaje) = await AuthService.LoginAsync(loginDto);
+
+        if (exito)
+            Nav.NavigateTo("/pacientes");
+        else
+            error = mensaje;
+
+        cargando = false;
+    }
+}

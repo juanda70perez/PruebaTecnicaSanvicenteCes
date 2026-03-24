@@ -1,0 +1,192 @@
+/* ============================================
+   UT San Vicente CES — Paleta Verde
+   ============================================ */
+:root {
+    --sv-dark:    #1b5e20;
+    --sv-primary: #2e7d32;
+    --sv-medium:  #388e3c;
+    --sv-light:   #4caf50;
+    --sv-pale:    #e8f5e9;
+    --sv-accent:  #c8e6c9;
+}
+
+/* ============================================
+   BODY & BASE
+   ============================================ */
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background-color: #f4f6f4;
+    color: #2c3e2d;
+}
+
+/* ============================================
+   NAVBAR
+   ============================================ */
+.navbar-sv {
+    background: linear-gradient(135deg, var(--sv-dark) 0%, var(--sv-primary) 100%);
+    border-bottom: 3px solid var(--sv-light);
+}
+
+.navbar-sv .nav-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+    transition: color 0.2s;
+}
+
+.navbar-sv .nav-link:hover,
+.navbar-sv .nav-link.active {
+    color: #ffffff !important;
+}
+
+/* ============================================
+   TEXTO Y COLORES
+   ============================================ */
+.text-sv {
+    color: var(--sv-primary) !important;
+}
+
+/* ============================================
+   BOTONES
+   ============================================ */
+.btn-sv-primary {
+    background: linear-gradient(135deg, var(--sv-primary), var(--sv-medium));
+    border: none;
+    color: white;
+    transition: all 0.2s;
+}
+
+.btn-sv-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--sv-dark), var(--sv-primary));
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.35);
+}
+
+.btn-outline-sv {
+    border-color: var(--sv-primary);
+    color: var(--sv-primary);
+}
+
+.btn-outline-sv:hover {
+    background-color: var(--sv-primary);
+    color: white;
+}
+
+/* ============================================
+   TABLA
+   ============================================ */
+.table-sv thead {
+    background: linear-gradient(135deg, var(--sv-primary), var(--sv-medium));
+    color: white;
+}
+
+.table-sv thead th {
+    font-weight: 600;
+    border: none;
+    padding: 14px 16px;
+}
+
+.table-sv tbody tr {
+    transition: background-color 0.15s;
+}
+
+.table-sv tbody tr:hover {
+    background-color: var(--sv-pale);
+}
+
+.table-sv tbody td {
+    padding: 12px 16px;
+    vertical-align: middle;
+    border-color: #e8f5e9;
+}
+
+/* ============================================
+   LOGIN
+   ============================================ */
+.login-bg {
+    background: linear-gradient(160deg, var(--sv-pale) 0%, #f1f8e9 50%, #e8f5e9 100%);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.login-header {
+    background: linear-gradient(135deg, var(--sv-dark), var(--sv-primary));
+}
+
+.form-control-sv:focus {
+    border-color: var(--sv-light);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
+/* ============================================
+   FORM CONTROLS
+   ============================================ */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--sv-light);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
+/* ============================================
+   MODALES
+   ============================================ */
+.modal-backdrop-sv {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}
+
+.modal {
+    z-index: 1050;
+}
+
+.modal-header-sv {
+    background: linear-gradient(135deg, var(--sv-dark), var(--sv-primary));
+}
+
+/* ============================================
+   BADGES Y ALERTAS
+   ============================================ */
+.bg-success-subtle {
+    background-color: var(--sv-accent) !important;
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+.card {
+    border-radius: 12px;
+}
+
+/* ============================================
+   ANIMACIONES
+   ============================================ */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+.spin {
+    animation: spin 0.8s linear infinite;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 576px) {
+    .login-card {
+        margin: 1rem;
+        border-radius: 12px;
+    }
+
+    .table-sv thead th,
+    .table-sv tbody td {
+        padding: 10px 12px;
+        font-size: 0.875rem;
+    }
+}
