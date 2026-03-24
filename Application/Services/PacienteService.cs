@@ -81,7 +81,6 @@ namespace Application.Services
                     p.NumeroDocumento.Contains(termino));
             }
 
-            // Aplicar límite en memoria después del filtro
             if (take.HasValue)
             {
                 resultado = resultado.Take(take.Value);
@@ -135,13 +134,11 @@ namespace Application.Services
                 return texto;
             }
 
-            // Descompone cada carácter acentuado en su base + marca de acento (FormD)
             var descompuesto = texto.Normalize(NormalizationForm.FormD);
             var sb = new StringBuilder(descompuesto.Length);
 
             foreach (var c in descompuesto)
             {
-                // Descarta las marcas de acento (NonSpacingMark) y conserva el carácter base
                 if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
                 {
                     sb.Append(c);
