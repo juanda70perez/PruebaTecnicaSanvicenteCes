@@ -109,21 +109,18 @@ namespace Api.Extensions
 
                 options.Events = new JwtBearerEvents
                 {
-                   
                     OnTokenValidated = context =>
                     {
                         var username = context.Principal?.Identity?.Name;
                         return Task.CompletedTask;
                     },
 
-                    // context.Exception.Message te dice exactamente por qué falló
                     OnAuthenticationFailed = context =>
                     {
                         var error = context.Exception.Message;
                         return Task.CompletedTask;
                     },
 
-                    // ← PON BREAKPOINT AQUÍ: se dispara cuando no hay token en el header
                     OnChallenge = context =>
                     {
                         var reason = context.ErrorDescription;
@@ -147,29 +144,31 @@ namespace Api.Extensions
                 {
                     Title = "API Gestión de Pacientes",
                     Version = "v1",
-                    Description = "Para autenticarte: primero llama a POST /api/auth/token con usuario/contraseña de prueba, " +
-                                  "copia el token recibido y pégalo en el botón 'Authorize' con el formato: Bearer {token}",
+                    Description = "Autenticación JWT. Pega el token directamente en el botón 'Authorize'.",
                 });
 
-                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                // 1. Definimos el esquema de seguridad
+                var securityScheme = new OpenApiSecurityScheme
                 {
-                    Name = "Authorization",
-                    Type = SecuritySchemeType.ApiKey,
+                    Name = "JWT Authentication",
+                    Description = "Ingresa **solo** el token JWT",
                     In = ParameterLocation.Header,
-                    Description = "Ingresa el token con el formato: Bearer {token}",
-                });
+                    Type = SecuritySchemeType.Http, // Usar Http es mejor que ApiKey para JWT
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    Reference = new OpenApiReference
+                    {
+                        Id = "Bearer",
+                        Type = ReferenceType.SecurityScheme,
+                    },
+                };
+
+                options.AddSecurityDefinition(securityScheme.Reference.Id, securityScheme);
 
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
-                        },
-                        Array.Empty<string>()
-                    },
-                });
-
+        {
+            { securityScheme, Array.Empty<string>() }
+        });
             });
         }
     }
